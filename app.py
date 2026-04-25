@@ -10,14 +10,7 @@ from threading import Thread
 # =========================================================
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
-import seaborn as sns
 import plotly.express as px
-
-# =========================================================
-# GOOGLE COLAB
-# =========================================================
-from google.colab import drive, output
 
 # =========================================================
 # DASH
@@ -86,20 +79,17 @@ app.layout = html.Div([
 
     dcc.Tabs([
 
-        # =========================================================
-        # TAB 1: DEIN DASHBOARD (UNVERÄNDERT)
-        # =========================================================
         dcc.Tab(label="Dashboard", children=[
 
             html.Div([
 
-                # HEADER
                 html.Div([
-                    html.P("Interactive exploration of injury risk factors",
-                           style={"color": "#6c757d"})
+                    html.P(
+                        "Interactive exploration of injury risk factors",
+                        style={"color": "#6c757d"}
+                    )
                 ], style={"marginBottom": "20px"}),
 
-                # FILTER PANEL
                 html.Div([
 
                     html.Div([
@@ -165,7 +155,6 @@ app.layout = html.Div([
                     "marginBottom": "20px"
                 }),
 
-                # FEATURE SELECT
                 html.Div([
                     html.Label("Features"),
                     dcc.Dropdown(
@@ -195,73 +184,12 @@ app.layout = html.Div([
 
         ]),
 
-        # =========================================================
-        # TAB 2: PREDICTION
-        # =========================================================
         dcc.Tab(label="Prediction", children=[
 
             html.Div([
 
                 html.H3("Injury Risk Prediction", style={"marginBottom": "20px"}),
 
-                # INPUT CARD
-                html.Div([
-
-                    html.Div([
-                        html.Label("Age"),
-                        dcc.Slider(
-                            id="age-input",
-                            min=15, max=70, step=1, value=30,
-                            marks={20: "20", 40: "40", 60: "60"}
-                        )
-                    ], style={"marginBottom": "20px"}),
-
-                    html.Div([
-                        html.Label("Training Intensity"),
-                        dcc.Slider(
-                            id="intensity-input",
-                            min=1, max=5, step=1, value=3,
-                            marks={1: "1", 3: "3", 5: "5"}
-                        )
-                    ], style={"marginBottom": "20px"}),
-
-                    html.Div([
-                        html.Label("Training Frequency"),
-                        dcc.Input(
-                            id="frequency-input",
-                            type="number",
-                            value=3,
-                            style={"width": "100%"}
-                        )
-                    ], style={"marginBottom": "20px"}),
-
-                    html.Div([
-                        html.Label("Sleep Hours"),
-                        dcc.Slider(
-                            id="sleep-input",
-                            min=3, max=10, step=0.5, value=7,
-                            marks={4: "4h", 7: "7h", 9: "9h"}
-                        )
-                    ], style={"marginBottom": "20px"}),
-
-                    html.Div([
-                        html.Label("Stress Level"),
-                        dcc.Slider(
-                            id="stress-input",
-                            min=1, max=5, step=1, value=3,
-                            marks={1: "Low", 3: "Mid", 5: "High"}
-                        )
-                    ], style={"marginBottom": "20px"}),
-
-                ], style={
-                    "backgroundColor": "white",
-                    "padding": "20px",
-                    "borderRadius": "12px",
-                    "boxShadow": "0px 4px 12px rgba(0,0,0,0.05)",
-                    "marginBottom": "20px"
-                }),
-
-                # BUTTON + RESULT
                 html.Div([
 
                     html.Button(
@@ -277,172 +205,18 @@ app.layout = html.Div([
                         }
                     ),
 
-html.Div(id="prediction-output", style={
-    "marginTop": "20px",
-    "fontSize": "22px",
-    "fontWeight": "600"
-}),
-
-html.Div(id="feature-importance", style={
-    "marginTop": "30px"
-})
+                    html.Div(id="prediction-output"),
+                    html.Div(id="feature-importance")
 
                 ], style={"textAlign": "center"})
 
-            ], style={
-                "maxWidth": "700px",
-                "margin": "auto",
-                "padding": "20px"
-            })
+            ])
 
         ])
 
     ])
 
 ])
-
-# =========================================================
-# DASHBOARD CALLBACK (UNVERÄNDERT)
-# =========================================================
-@app.callback(
-    Output("kpis", "children"),
-    Output("plots", "children"),
-    Input("gender-filter", "value"),
-    Input("age-filter", "value"),
-    Input("plot-type", "value"),
-    Input("x-axis", "value"),
-    Input("y-axis", "value"),
-    Input("features", "value"),
-)
-def update_dashboard(genders, ages, plot_type, x, y, features):
-
-    dff = df[
-        (df["gender_label"].isin(genders)) &
-        (df["age_group"].isin(ages))
-    ].copy()
-
-    if len(dff) > 1000:
-        dff = dff.sample(1000, random_state=42)
-
-    if dff.empty:
-        return [], html.Div("No data available")
-
-    def card(title, value):
-        return html.Div([
-            html.Div(title, style={"fontSize": "12px", "color": "#6c757d"}),
-            html.Div(value, style={"fontSize": "20px", "fontWeight": "600"})
-        ], style={
-            "backgroundColor": "white",
-            "padding": "15px",
-            "borderRadius": "10px",
-            "boxShadow": "0px 4px 12px rgba(0,0,0,0.05)",
-            "minWidth": "120px"
-        })
-
-    kpis = [
-        card("Rows", f"{len(dff):,}"),
-        card("Injury Rate", f"{dff['injury'].mean()*100:.1f}%"),
-        card("Avg X", f"{dff[x].mean():.2f}" if x in dff else "-"),
-        card("Avg Y", f"{dff[y].mean():.2f}" if y in dff else "-"),
-    ]
-
-    if plot_type == "scatter":
-        fig = px.scatter(dff, x=x, y=y, color="injury_label", symbol="gender_label")
-
-    elif plot_type == "hist":
-        fig = px.histogram(dff, x=x, color="injury_label")
-
-    elif plot_type == "box":
-        fig = px.box(dff, x="injury_label", y=x)
-
-    elif plot_type == "violin":
-        fig = px.violin(dff, x="injury_label", y=x)
-
-    elif plot_type == "density":
-        fig = px.density_contour(dff, x=x, y=y)
-
-    elif plot_type == "line":
-        fig = px.line(dff.sort_values(x), x=x, y=y)
-
-    elif plot_type == "corr":
-        fig = px.imshow(dff[features].corr())
-
-    fig.update_layout(template="plotly_white", height=600)
-
-    return kpis, dcc.Graph(figure=fig)
-
-@app.callback(
-    Output("prediction-output", "children"),
-    Output("feature-importance", "children"),
-    Input("predict-btn", "n_clicks"),
-    Input("age-input", "value"),
-    Input("intensity-input", "value"),
-    Input("frequency-input", "value"),
-    Input("sleep-input", "value"),
-    Input("stress-input", "value"),
-)
-
-def predict(n, age, intensity, frequency, sleep, stress):
-
-    if not n:
-        return "", ""
-
-    # =====================
-    # BASELINE (WICHTIG)
-    # =====================
-    defaults = df.mean(numeric_only=True).to_dict()
-
-    # =====================
-    # USER INPUT
-    # =====================
-    defaults.update({
-        "age": age,
-        "training_intensity": intensity,
-        "training_frequency": frequency,
-        "sleep_hours": sleep,
-        "stress_level": stress,
-        "load_score": intensity * frequency if intensity and frequency else 0
-    })
-
-    if "gender" in feature_columns:
-        defaults["gender"] = 0
-
-    # =====================
-    # MODEL INPUT
-    # =====================
-    input_df = pd.DataFrame([defaults])
-    input_df = input_df.reindex(columns=feature_columns, fill_value=0)
-
-    # =====================
-    # PREDICTION
-    # =====================
-    prob = model.predict_proba(input_df)[0][1]
-
-    # =====================
-    # FEATURE IMPORTANCE
-    # =====================
-    importance = pd.Series(
-        model.feature_importances_,
-        index=feature_columns
-    ).sort_values(ascending=False).head(8)
-
-    fig = px.bar(
-        importance,
-        x=importance.values,
-        y=importance.index,
-        orientation="h"
-    )
-
-    fig.update_layout(
-        template="plotly_white",
-        height=400,
-        margin=dict(l=40, r=20, t=30, b=30)
-    )
-
-    return (
-        f"Injury Risk: {prob*100:.1f}%",
-        dcc.Graph(figure=fig)
-    )
 
 # =========================================================
 # RUN
