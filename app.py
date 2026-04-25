@@ -1,4 +1,50 @@
 # =========================================================
+# STANDARD LIBRARY
+# =========================================================
+import sqlite3
+import pickle
+from threading import Thread
+
+# =========================================================
+# DATA & VISUALIZATION
+# =========================================================
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+import plotly.express as px
+
+# =========================================================
+# GOOGLE COLAB
+# =========================================================
+from google.colab import drive, output
+
+# =========================================================
+# DASH
+# =========================================================
+from dash import Dash, dcc, html, Input, Output
+
+# =========================================================
+# MACHINE LEARNING
+# =========================================================
+from sklearn.impute import KNNImputer
+from sklearn.model_selection import train_test_split, cross_val_score
+from sklearn.metrics import (
+    auc,
+    classification_report,
+    confusion_matrix,
+    roc_curve,
+)
+from sklearn.preprocessing import StandardScaler
+
+from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
+from sklearn.linear_model import LogisticRegression
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.neural_network import MLPClassifier
+from sklearn.svm import SVC
+from sklearn.naive_bayes import GaussianNB
+
+# =========================================================
 # LOAD DATA FROM SQLITE
 # =========================================================
 conn = sqlite3.connect("injury_analysis.db")
