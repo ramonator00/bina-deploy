@@ -3,14 +3,14 @@
 # =========================================================
 import sqlite3
 import pickle
-from threading import Thread
+import os
 
 # =========================================================
 # DATA & VISUALIZATION
 # =========================================================
 import numpy as np
 import pandas as pd
-import os
+import plotly.express as px
 
 # =========================================================
 # DASH
@@ -18,32 +18,13 @@ import os
 from dash import Dash, dcc, html, Input, Output
 
 # =========================================================
-# MACHINE LEARNING
+# LOAD DATA
 # =========================================================
-from sklearn.impute import KNNImputer
-from sklearn.model_selection import train_test_split, cross_val_score
-from sklearn.metrics import (
-    auc,
-    classification_report,
-    confusion_matrix,
-    roc_curve,
-)
-from sklearn.preprocessing import StandardScaler
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
-from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
-from sklearn.linear_model import LogisticRegression
-from sklearn.neighbors import KNeighborsClassifier
-from sklearn.neural_network import MLPClassifier
-from sklearn.svm import SVC
-from sklearn.naive_bayes import GaussianNB
-
-# =========================================================
-# LOAD DATA FROM SQLITE
-# =========================================================
-conn = sqlite3.connect("injury_analysis.db")
+conn = sqlite3.connect(os.path.join(BASE_DIR, "injury_analysis.db"))
 df = pd.read_sql("SELECT * FROM injury_data", conn)
 
-# Labels
 df["gender_label"] = df["gender"].map({"m": "Male", "f": "Female"}).fillna("Unknown")
 df["injury_label"] = df["injury"].map({1: "Injury", 0: "No Injury"})
 
@@ -60,12 +41,12 @@ default_x = "training_intensity" if "training_intensity" in numeric_cols else nu
 default_y = "load_score" if "load_score" in numeric_cols else numeric_cols[1]
 
 # =========================================================
-# LOAD MODEL (für Prediction Tab)
+# LOAD MODEL
 # =========================================================
-with open("injury_model.pkl", "rb") as f:
+with open(os.path.join(BASE_DIR, "injury_model.pkl"), "rb") as f:
     model = pickle.load(f)
 
-with open("feature_columns.pkl", "rb") as f:
+with open(os.path.join(BASE_DIR, "feature_columns.pkl"), "rb") as f:
     feature_columns = pickle.load(f)
 
 # =========================================================
@@ -84,133 +65,63 @@ app.layout = html.Div([
             html.Div([
 
                 html.Div([
-                    html.P(
-                        "Interactive exploration of injury risk factors",
-                        style={"color": "#6c757d"}
-                    )
+                    html.P("Interactive exploration of injury risk factors",
+                           style={"color": "#6c757d"})
                 ], style={"marginBottom": "20px"}),
 
                 html.Div([
 
-                    html.Div([
-                        html.Label("Gender"),
-                        dcc.Dropdown(
-                            id="gender-filter",
-                            options=[{"label": g, "value": g} for g in df["gender_label"].unique()],
-                            value=list(df["gender_label"].unique()),
-                            multi=True
-                        )
-                    ], style={"width": "20%", "display": "inline-block", "padding": "5px"}),
-
-                    html.Div([
-                        html.Label("Age Group"),
-                        dcc.Dropdown(
-                            id="age-filter",
-                            options=[{"label": a, "value": a} for a in df["age_group"].dropna().unique()],
-                            value=list(df["age_group"].dropna().unique()),
-                            multi=True
-                        )
-                    ], style={"width": "20%", "display": "inline-block", "padding": "5px"}),
-
-                    html.Div([
-                        html.Label("Plot Type"),
-                        dcc.Dropdown(
-                            id="plot-type",
-                            options=[
-                                {"label": "Scatter", "value": "scatter"},
-                                {"label": "Histogram", "value": "hist"},
-                                {"label": "Box", "value": "box"},
-                                {"label": "Violin", "value": "violin"},
-                                {"label": "Density", "value": "density"},
-                                {"label": "Correlation Heatmap", "value": "corr"},
-                                {"label": "Line", "value": "line"},
-                            ],
-                            value="scatter"
-                        )
-                    ], style={"width": "20%", "display": "inline-block", "padding": "5px"}),
-
-                    html.Div([
-                        html.Label("X Axis"),
-                        dcc.Dropdown(
-                            id="x-axis",
-                            options=[{"label": c, "value": c} for c in numeric_cols],
-                            value=default_x
-                        )
-                    ], style={"width": "20%", "display": "inline-block", "padding": "5px"}),
-
-                    html.Div([
-                        html.Label("Y Axis"),
-                        dcc.Dropdown(
-                            id="y-axis",
-                            options=[{"label": c, "value": c} for c in numeric_cols],
-                            value=default_y
-                        )
-                    ], style={"width": "20%", "display": "inline-block", "padding": "5px"}),
-
-                ], style={
-                    "backgroundColor": "white",
-                    "padding": "15px",
-                    "borderRadius": "12px",
-                    "boxShadow": "0px 4px 12px rgba(0,0,0,0.05)",
-                    "marginBottom": "20px"
-                }),
-
-                html.Div([
-                    html.Label("Features"),
                     dcc.Dropdown(
-                        id="features",
-                        options=[{"label": c, "value": c} for c in numeric_cols],
-                        value=numeric_cols[:5],
+                        id="gender-filter",
+                        options=[{"label": g, "value": g} for g in df["gender_label"].unique()],
+                        value=list(df["gender_label"].unique()),
                         multi=True
-                    )
-                ], style={
-                    "backgroundColor": "white",
-                    "padding": "15px",
-                    "borderRadius": "12px",
-                    "boxShadow": "0px 4px 12px rgba(0,0,0,0.05)",
-                    "marginBottom": "20px"
-                }),
+                    ),
 
-                html.Div(id="kpis", style={"display": "flex", "gap": "15px", "marginBottom": "20px"}),
+                    dcc.Dropdown(
+                        id="age-filter",
+                        options=[{"label": a, "value": a} for a in df["age_group"].dropna().unique()],
+                        value=list(df["age_group"].dropna().unique()),
+                        multi=True
+                    ),
+
+                    dcc.Dropdown(
+                        id="plot-type",
+                        options=[
+                            {"label": "Scatter", "value": "scatter"},
+                            {"label": "Histogram", "value": "hist"},
+                            {"label": "Box", "value": "box"},
+                            {"label": "Correlation", "value": "corr"},
+                        ],
+                        value="scatter"
+                    ),
+
+                    dcc.Dropdown(
+                        id="x-axis",
+                        options=[{"label": c, "value": c} for c in numeric_cols],
+                        value=default_x
+                    ),
+
+                    dcc.Dropdown(
+                        id="y-axis",
+                        options=[{"label": c, "value": c} for c in numeric_cols],
+                        value=default_y
+                    ),
+
+                ]),
+
+                html.Div(id="kpis"),
                 html.Div(id="plots")
 
-            ], style={
-                "maxWidth": "1300px",
-                "margin": "auto",
-                "padding": "20px",
-                "backgroundColor": "#f5f7fa",
-                "fontFamily": "Arial"
-            })
+            ])
 
         ]),
 
         dcc.Tab(label="Prediction", children=[
 
-            html.Div([
-
-                html.H3("Injury Risk Prediction", style={"marginBottom": "20px"}),
-
-                html.Div([
-
-                    html.Button(
-                        "Run Prediction",
-                        id="predict-btn",
-                        style={
-                            "padding": "10px 20px",
-                            "backgroundColor": "#4C78A8",
-                            "color": "white",
-                            "border": "none",
-                            "borderRadius": "6px",
-                            "cursor": "pointer"
-                        }
-                    ),
-
-                    html.Div(id="prediction-output"),
-                    html.Div(id="feature-importance")
-
-                ], style={"textAlign": "center"})
-
-            ])
+            html.Button("Run Prediction", id="predict-btn"),
+            html.Div(id="prediction-output"),
+            html.Div(id="feature-importance")
 
         ])
 
@@ -219,8 +130,74 @@ app.layout = html.Div([
 ])
 
 # =========================================================
+# DASHBOARD CALLBACK
+# =========================================================
+@app.callback(
+    Output("kpis", "children"),
+    Output("plots", "children"),
+    Input("gender-filter", "value"),
+    Input("age-filter", "value"),
+    Input("plot-type", "value"),
+    Input("x-axis", "value"),
+    Input("y-axis", "value"),
+)
+def update_dashboard(genders, ages, plot_type, x, y):
+
+    dff = df[
+        (df["gender_label"].isin(genders)) &
+        (df["age_group"].isin(ages))
+    ]
+
+    if dff.empty:
+        return "No data", ""
+
+    kpis = f"Rows: {len(dff)} | Injury Rate: {dff['injury'].mean()*100:.1f}%"
+
+    if plot_type == "scatter":
+        fig = px.scatter(dff, x=x, y=y, color="injury_label")
+
+    elif plot_type == "hist":
+        fig = px.histogram(dff, x=x)
+
+    elif plot_type == "box":
+        fig = px.box(dff, x="injury_label", y=x)
+
+    elif plot_type == "corr":
+        fig = px.imshow(dff[numeric_cols].corr())
+
+    return kpis, dcc.Graph(figure=fig)
+
+# =========================================================
+# PREDICTION CALLBACK
+# =========================================================
+@app.callback(
+    Output("prediction-output", "children"),
+    Output("feature-importance", "children"),
+    Input("predict-btn", "n_clicks"),
+)
+def predict(n):
+
+    if not n:
+        return "", ""
+
+    input_df = df[feature_columns].mean().to_frame().T
+
+    prob = model.predict_proba(input_df)[0][1]
+
+    importance = pd.Series(
+        model.feature_importances_,
+        index=feature_columns
+    ).sort_values(ascending=False).head(8)
+
+    fig = px.bar(importance, x=importance.values, y=importance.index, orientation="h")
+
+    return f"Injury Risk: {prob*100:.1f}%", dcc.Graph(figure=fig)
+
+# =========================================================
 # RUN
 # =========================================================
+server = app.server
+
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8050))
     app.run(host="0.0.0.0", port=port)
