@@ -22,6 +22,13 @@ from dash import Dash, dcc, html, Input, Output
 conn = sqlite3.connect("injury_analysis.db")
 df = pd.read_sql("SELECT * FROM injury_data", conn)
 
+COLOR_MAP = {
+    "Injury": "#E45756",      # rot
+    "No Injury": "#4C78A8"    # blau
+}
+
+CATEGORY_ORDER = ["No Injury", "Injury"]
+
 # Labels
 df["gender_label"] = df["gender"].map({"m": "Male", "f": "Female"}).fillna("Unknown")
 df["injury_label"] = df["injury"].map({1: "Injury", 0: "No Injury"})
@@ -320,16 +327,41 @@ def update_dashboard(genders, ages, plot_type, x, y, features):
     ]
 
     if plot_type == "scatter":
-        fig = px.scatter(dff, x=x, y=y, color="injury_label", symbol="gender_label")
+        fig = px.scatter(
+            dff, x=x, y=y,
+            color="injury_label",
+            symbol="gender_label",
+            color_discrete_map=COLOR_MAP,
+            category_orders={"injury_label": CATEGORY_ORDER}
+        )
 
     elif plot_type == "hist":
-        fig = px.histogram(dff, x=x, color="injury_label")
+        fig = px.histogram(
+            dff, x=x,
+            color="injury_label",
+            color_discrete_map=COLOR_MAP,
+            category_orders={"injury_label": CATEGORY_ORDER}
+        )
 
     elif plot_type == "box":
-        fig = px.box(dff, x="injury_label", y=x)
+        fig = px.box(
+            dff,
+            x="injury_label",
+            y=x,
+            color="injury_label",
+            color_discrete_map=COLOR_MAP,
+            category_orders={"injury_label": CATEGORY_ORDER}
+        )
 
     elif plot_type == "violin":
-        fig = px.violin(dff, x="injury_label", y=x)
+        fig = px.violin(
+            dff,
+            x="injury_label",
+            y=x,
+            color="injury_label",
+            color_discrete_map=COLOR_MAP,
+            category_orders={"injury_label": CATEGORY_ORDER}
+        )
 
     elif plot_type == "density":
         fig = px.density_contour(dff, x=x, y=y)
